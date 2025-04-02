@@ -72,10 +72,23 @@
     </div>
     
     <script>
-        let records = [];
-        const incomePerShift = { morning: 115, afternoon: 115, both: 230 };
+        // Firebase setup
+        const firebaseConfig = {
+            apiKey: "AIzaSyC6zolfbumlGMBFCCXGLEuT-ShmSTnJmFs",
+            authDomain: "income-b9c80.firebaseapp.com",
+            projectId: "income-b9c80",
+            storageBucket: "income-b9c80.appspot.com",
+            messagingSenderId: "216375902842",
+            appId: "1:216375902842:web:c94db01dc15cb9fa15f1c3",
+            measurementId: "G-NKJF7M3Q8H"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app); // Initialize Firestore
 
-        function addRecord() {
+        const incomePerShift = { morning: 115, afternoon: 115, both: 230 };
+        let records = [];
+
+        async function addRecord() {
             let date = document.getElementById("date").value;
             let shift = document.getElementById("shift").value;
             let miles = parseFloat(document.getElementById("miles").value) || 0;
@@ -84,9 +97,28 @@
             let profit = income - gas;
             let finalProfit = profit - (profit * 0.10); // Deducting 10% company fee
 
-            records.push({ date, shift, income, finalProfit });
+            // Add the record to Firestore
+            await setDoc(doc(db, "records", date), {
+                date: date,
+                shift: shift,
+                income: income,
+                finalProfit: finalProfit
+            });
+
+            // Update the table after saving to Firestore
             updateTable();
         }
+
+        async function loadRecords() {
+            const querySnapshot = await getDocs(collection(db, "records"));
+            querySnapshot.forEach((doc) => {
+                const record = doc.data();
+                records.push(record); // Add the record to our local array
+            });
+            updateTable(); // Update the table after fetching data
+        }
+
+        loadRecords(); // Load records when page is loaded
 
         function updateTable() {
             let tbody = document.getElementById("records");
@@ -130,5 +162,4 @@
         }
     </script>
 </body>
-
 </html>
